@@ -175,13 +175,14 @@ body {
             			player.body.position.y = 0;
             			game.teleport = true;
             	}//paradoteo 3o - teleport.
-            	if(score >=1000) {
+            	if(score >=20000) {
 				player.frame = 7;
 				player.frame = 9;
 				player.frame = 2;
 				player.body.enable = false;
 				player.animations.stop();
-
+				stateText.text="    YOU WON !!!";
+        			stateText.visible = true;
 				game.time.events.add(Phaser.Timer.SECOND * 3, function() {
 					game.paused = true;
 				}); 		
@@ -327,7 +328,7 @@ body {
 				Aworldmusic.pause();
 				Amariodie.play();
 					
-				stateText.text="    GAME OVER! \nClick the F5 button to restart.";
+			stateText.text="    GAME OVER! \nClick the F5 button to restart.";
         		stateText.visible = true;
 			}
 		}//paradoteo 3o - new enemies
