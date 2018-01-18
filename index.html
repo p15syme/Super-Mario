@@ -21,10 +21,9 @@ body {
 		}, false, false);
 
 		function preload() {
-			//  We need this because the assets are on github pages
-			//  Remove the next 2 lines if running locally
+
 			this.load.baseURL = 'https://p15syme.github.io/Super-Mario/';
-			this.load.crossOrigin = 'anonymous';
+		/this.load.crossOrigin = 'anonymous';
 			this.load.spritesheet('tiles', 'assets/super_mario_tiles.png', 16,
 					16);
 			this.load.spritesheet('goomba', 'assets/goomba.png', 16, 16);
@@ -32,8 +31,13 @@ body {
 			this.load.spritesheet('purple', 'assets/purple.png', 16, 16);//paradoteo 3o - new enemies
 			this.load.spritesheet('mario', 'assets/mario2.png', 16, 16);
 			this.load.spritesheet('coin', 'assets/coin2.png', 16, 16);
+			this.load.spritesheet('button1', 'assets/level1.png');//paradoteo 4
+			this.load.spritesheet('button2', 'assets/level2.png');//paradoteo 4
 			this.load.tilemap('level', 'assets/tilesmap.json', null,
 					Phaser.Tilemap.TILED_JSON);
+		
+			this.load.tilemap('level2', 'assets/tilesmap2.json', null,
+					Phaser.Tilemap.TILED_JSON);//paradoteo 4
 		}
 
 		var Ajump = new Audio ('audio/jump.wav');
@@ -42,22 +46,133 @@ body {
 		var Amariodie = new Audio ('audio/mariodie.wav');
 		var Aworldmusic = new Audio ('audio/worldmusic.mp3');
 		var Abowser = new Audio ('audio/bowser.wav');
-		var score;
+		
 		var score = 0;
 		var scoreText;
-		var music;
+		
+		var titleText;//paradoteo 4
+		var subtitle;//paradoteo 4
+		var subtitle2;//paradoteo 4
+		var finishText;//paradoteo 4
+
 		var lives = 4;
 		var livesText;
-		var teleport = false;
+		
+		var music;
+		
+		var teleport = false;//paradoteo 3
+		
+		var enterKey;//paradoteo 4
+		
+		var counter_level = 1;//paradoteo 4
 
 		function create() {
-
+			
 			Phaser.Canvas.setImageRenderingCrisp(game.canvas)
 			game.scale.pageAlignHorizontally = true;
 			game.scale.pageAlignVertically = true
 			game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 			game.physics.startSystem(Phaser.Physics.ARCADE);
 			game.stage.backgroundColor = '#5c94fc';
+			
+			this.spaceKey = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+			this.enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
+
+			button1 = game.add.button(game.world.centerX-34 , game.world.centerY-20, 'button1', level1, this, 2, 1, 0);//paradoteo 3
+			button2 = game.add.button(game.world.centerX-34 , game.world.centerY+10, 'button2', level2, this, 2, 1, 0);//paradoteo 3
+
+			main();
+
+		}
+
+		function update() {
+
+			game.physics.arcade.collide(player, layer);
+			game.physics.arcade.collide(goombas, layer);
+			game.physics.arcade.overlap(player, goombas, goombaOverlap);
+			game.physics.arcade.collide(mons, layer);//paradoteo 3o
+			game.physics.arcade.overlap(player, mons, monsOverlap);//paradoteo 3o
+			game.physics.arcade.collide(purples, layer);//paradoteo 3o
+			game.physics.arcade.overlap(player, purples, purplesOverlap);//paradoteo 3o
+			game.physics.arcade.overlap(player, coins, coinOverlap);
+
+			if (player.body.enable) {
+				player.body.velocity.x = 0;
+				if (cursors.left.isDown) {
+					player.body.velocity.x = -90;
+					player.animations.play('walkLeft');
+					player.goesRight = false;
+				} else if (cursors.right.isDown) {
+					player.body.velocity.x = 90;
+					player.animations.play('walkRight');
+					player.goesRight = true;
+				} else {
+					player.animations.stop();
+					if (player.goesRight)
+						player.frame = 0;
+					else
+						player.frame = 7;
+				}
+				if (cursors.up.isDown && player.body.onFloor()) {
+					player.body.velocity.y = -190;
+					player.animations.stop();
+					Ajump.play();
+				}
+				if (player.body.velocity.y != 0) {
+					if (player.goesRight)
+						player.frame = 5;
+					else
+						player.frame = 12;
+				}
+				if (this.spaceKey.isDown && !game.teleport) {
+            			player.body.position.x = 1632;
+            			player.body.position.y = 0;
+            			game.teleport = true;
+            	}//paradoteo 3o - teleport.
+            	if(score >=14000 && this.enterKey.isDown) {
+            		if(counter_level == 1) {
+            			reset();
+						level2();
+					}
+				}//paradoteo 4
+				if(score >=17000 && this.enterKey.isDown) {
+						game.paused = true;
+						player.frame = 9;
+						Aworldmusic.pause();
+						finishText = game.add.text (50, 50, 'You Won!', {fontSize: '16px', fill: 'ff00ff'});
+						finishText.fontWeight = 'bold';
+				}//paradoteo 4
+			//paradoteo 3o - animation.			
+			}
+		}
+
+		function main() {
+
+			game.stage.backgroundColor = '#5c94fc';
+			
+			titleText = game.add.text (25, 29, 'Super Mario', {fontSize: '35px', fill: '#cc0000'});
+			titleText.fontWeight = 'bold';
+			
+			subtitle = game.add.text (1, 200, 'Score 14.000 Points or More and Press Enter to Proceed into Level 2.', {fontSize: '9px', fill: '#410574'});
+			subtitle.fontWeight = 'bold';
+
+			subtitle2 = game.add.text (70, 190, 'Press Space to Teleport.', {fontSize: '9px', fill: '#b83249'});
+			subtitle2.fontWeight = 'bold';
+
+			game.paused = true;
+			reset();
+		}//paradoteo 3
+
+
+		function level1() {//paradoteo 4
+
+			game.paused = false;
+			button1.destroy();
+			button2.destroy();
+			titleText.visible = false;
+			subtitle.visible = false;
+			subtitle2.visible = false;
+
 
 			map = game.add.tilemap('level');
 			map.addTilesetImage('tiles', 'tiles');
@@ -112,7 +227,89 @@ body {
 			player.goesRight = true;
 			game.camera.follow(player);
 			cursors = game.input.keyboard.createCursorKeys();
+
+			scoreText = game.add.text (16, 14, 'Score: 0', {fontSize: '13px ', fill: '#000000'});
+			scoreText.fontWeight = 'bold';
+			scoreText.fixedToCamera = true;
+
+   			livesText = game.add.text(180, 14, 'Lives : 4', { font: '13px Arial', fill: '#000000'});
+   			livesText.fontWeight = 'bold';
+   			livesText.fixedToCamera = true;
+
+   			stateText = game.add.text(60, 40, ' ', { font: '12px Arial', fill: '#000' });
+    		stateText.visible = false;
+			stateText.fontWeight = 'bold';
+			stateText.fixedToCamera = true;
+
+			Aworldmusic.play();
+
+		}//paradoteo 3
+
+		function level2() {//paradoteo 4
+
+			game.paused = false;
+			button1.destroy();
+			button2.destroy();
+			titleText.visible = false;
+			subtitle.visible = false;
+			subtitle2.visible = false;
+
+			map = game.add.tilemap('level2');
+			map.addTilesetImage('tiles', 'tiles');
+			map.setCollisionBetween(3, 12, true, 'solid');
+			map.createLayer('background');
+			layer = map.createLayer('solid');
+			layer.resizeWorld();
+
+			coins = game.add.group();
+			coins.enableBody = true;
+			map.createFromTiles(2, null, 'coin', 'stuff', coins);
+			coins.callAll('animations.add', 'animations', 'spin',
+					[ 0, 0, 1, 2 ], 3, true);
+			coins.callAll('animations.play', 'animations', 'spin');
+
+			goombas = game.add.group();
+			goombas.enableBody = true;
+			map.createFromTiles(1, null, 'goomba', 'stuff', goombas);
+			goombas.callAll('animations.add', 'animations', 'walk', [ 0, 1 ],
+					2, true);
+			goombas.callAll('animations.play', 'animations', 'walk');
+			goombas.setAll('body.bounce.x', 1);
+			goombas.setAll('body.velocity.x', -20);
+			goombas.setAll('body.gravity.y', 500);
+
+			mons = game.add.group();
+			mons.enableBody = true;
+			map.createFromTiles(12, null, 'mon', 'stuff', mons);
+			mons.callAll('animations.add', 'animations', 'walk', [ 0, 1 ],
+					1, true);
+			mons.callAll('animations.play', 'animations', 'walk');
+			mons.setAll('body.bounce.x', 1);
+			mons.setAll('body.velocity.x', -30);
+			mons.setAll('body.gravity.y', 500);
+
+			purples = game.add.group();
+			purples.enableBody = true;
+			map.createFromTiles(9, null, 'purple', 'stuff', purples);
+			purples.callAll('animations.add', 'animations', 'walk', [ 0, 1 ],
+					1, true);
+			purples.callAll('animations.play', 'animations', 'walk');
+			purples.setAll('body.bounce.x', 1);
+			purples.setAll('body.velocity.x', -40);
+			purples.setAll('body.gravity.y', 500);
+
+			player = game.add.sprite(16, game.world.height - 48, 'mario');
+			game.physics.arcade.enable(player);
+			player.body.gravity.y = 370;
+			player.body.collideWorldBounds = true;
+			player.animations.add('walkRight', [ 1, 2, 3 ], 10, true);
+			player.animations.add('walkLeft', [ 8, 9, 10 ], 10, true);
+			player.goesRight = true;
+			game.camera.follow(player);
+			cursors = game.input.keyboard.createCursorKeys();
+
 			this.spaceKey = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+			this.enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
 
 			scoreText = game.add.text (16, 14, 'Score: 0', {fontSize: '12px', fill: '#000'});
 			scoreText.fontWeight = 'bold';
@@ -128,68 +325,23 @@ body {
 			stateText.fixedToCamera = true;
 
 			Aworldmusic.play();
-		}
+		}//paradoteo 4
 
-		function update() {
+		function reset() {
 
-			game.physics.arcade.collide(player, layer);
-			game.physics.arcade.collide(goombas, layer);
-			game.physics.arcade.overlap(player, goombas, goombaOverlap);
-			game.physics.arcade.collide(mons, layer);//paradoteo 3o
-			game.physics.arcade.overlap(player, mons, monsOverlap);//paradoteo 3o
-			game.physics.arcade.collide(purples, layer);//paradoteo 3o
-			game.physics.arcade.overlap(player, purples, purplesOverlap);//paradoteo 3o
+			coins.kill();
 
-			game.physics.arcade.overlap(player, coins, coinOverlap);
+			goombas.kill();
+			mons.kill();
+			purples.kill();
 
-			if (player.body.enable) {
-				player.body.velocity.x = 0;
-				if (cursors.left.isDown) {
-					player.body.velocity.x = -90;
-					player.animations.play('walkLeft');
-					player.goesRight = false;
-				} else if (cursors.right.isDown) {
-					player.body.velocity.x = 90;
-					player.animations.play('walkRight');
-					player.goesRight = true;
-				} else {
-					player.animations.stop();
-					if (player.goesRight)
-						player.frame = 0;
-					else
-						player.frame = 7;
-				}
-				if (cursors.up.isDown && player.body.onFloor()) {
-					player.body.velocity.y = -190;
-					player.animations.stop();
-					Ajump.play();
-				}
-				if (player.body.velocity.y != 0) {
-					if (player.goesRight)
-						player.frame = 5;
-					else
-						player.frame = 12;
-				}
-				if (this.spaceKey.isDown && !game.teleport) {
-            			player.body.position.x = 1632;
-            			player.body.position.y = 0;
-            			game.teleport = true;
-            	}//paradoteo 3o - teleport.
-            	if(score >=20000) {
-				player.frame = 7;
-				player.frame = 9;
-				player.frame = 2;
-				player.body.enable = false;
-				player.animations.stop();
-				stateText.text="    YOU WON !!!";
-        			stateText.visible = true;
-				game.time.events.add(Phaser.Timer.SECOND * 3, function() {
-					game.paused = true;
-				}); 		
+			map.destroy();
+			layer.destroy();
 
-            	}//paradoteo 3o - animation.			
-			}
-		}
+			scoreText.kill();
+			livesText.kill();
+
+		}//paradoteo 4
 
 		function coinOverlap(player, coin) {
 			coin.kill();
@@ -222,7 +374,7 @@ body {
 				lives--;
 				score -= 150;
 				scoreText.text = 'Score: ' +score;//bonus 2.
-				player.x=player.x-25;
+				player.x=player.x-2500;
 				goomba.x=goomba.x+12;
 				livesText.text = 'Lives: ' +lives;	
 			}
@@ -236,7 +388,7 @@ body {
 				Aworldmusic.pause();
 				Amariodie.play();
 					
-				stateText.text="    GAME OVER! \nClick the F5 button to restart.";
+				stateText.text="\nGAME OVER! \nClick the F5 button to restart.";
         		stateText.visible = true;
 			}
 		}
@@ -264,7 +416,7 @@ body {
 				lives--;
 				score -= 75;
 				scoreText.text = 'Score: ' +score;//bonus 2.
-				player.x=player.x-30;
+				player.x=player.x-2500;
 				mon.x=mon.x+20;
 
 				livesText.text = 'Lives: ' +lives;	
@@ -282,7 +434,7 @@ body {
 				Aworldmusic.pause();
 				Amariodie.play();
 					
-				stateText.text="    GAME OVER! \nClick the F5 button to restart.";
+				stateText.text="\tGAME OVER! \nClick the F5 button to restart.";
         		stateText.visible = true;
 			}
 		}//paradoteo 3o - new enemies
@@ -310,7 +462,7 @@ body {
 				lives--;
 				score -= 50;
 				scoreText.text = 'Score: ' +score;//bonus 2.
-				player.x=player.x-35;
+				player.x=player.x-2500;
 				purple.x=purple.x+24;
 
 				livesText.text = 'Lives: ' +lives;	
